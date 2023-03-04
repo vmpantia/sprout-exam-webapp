@@ -7,6 +7,8 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Sprout.Exam.Business.DataTransferObjects;
 using Sprout.Exam.Common.Enums;
+using Sprout.Exam.Common.Constants;
+using Sprout.Exam.WebApp.Services;
 
 namespace Sprout.Exam.WebApp.Controllers
 {
@@ -100,23 +102,28 @@ namespace Sprout.Exam.WebApp.Controllers
         /// <param name="workedDays"></param>
         /// <returns></returns>
         [HttpPost("{id}/calculate")]
-        public async Task<IActionResult> Calculate(int id,decimal absentDays,decimal workedDays)
+        public async Task<IActionResult> Calculate(CalculateDto input)
         {
-            var result = await Task.FromResult(StaticEmployees.ResultList.FirstOrDefault(m => m.Id == id));
+            var result = await Task.FromResult(StaticEmployees.ResultList.FirstOrDefault(m => m.Id == input.Id));
 
             if (result == null) return NotFound();
             var type = (EmployeeType) result.TypeId;
-            return type switch
-            {
-                EmployeeType.Regular =>
-                    //create computation for regular.
-                    Ok(25000),
-                EmployeeType.Contractual =>
-                    //create computation for contractual.
-                    Ok(20000),
-                _ => NotFound("Employee Type not found")
-            };
 
+            decimal totalSalary;
+            switch (type)
+            {
+                case EmployeeType.Regular:
+                    totalSalary = UtilityService.CalculateSalary(EmployeeType.Regular, input.AbsentDays);
+                    break;
+
+                case EmployeeType.Contractual:
+                    totalSalary = UtilityService.CalculateSalary(EmployeeType.Contractual, input.WorkedDays);
+                    break;
+
+                default:
+                    return NotFound("Employee Type not found");
+            }
+            return Ok(totalSalary);
         }
 
     }
