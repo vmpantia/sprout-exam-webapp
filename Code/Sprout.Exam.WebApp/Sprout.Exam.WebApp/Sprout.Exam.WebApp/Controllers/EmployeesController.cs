@@ -9,6 +9,7 @@ using Sprout.Exam.Business.DataTransferObjects;
 using Sprout.Exam.Common.Enums;
 using Sprout.Exam.Common.Constants;
 using Sprout.Exam.WebApp.Services;
+using Sprout.Exam.WebApp.Contractors;
 
 namespace Sprout.Exam.WebApp.Controllers
 {
@@ -17,6 +18,11 @@ namespace Sprout.Exam.WebApp.Controllers
     [ApiController]
     public class EmployeesController : ControllerBase
     {
+        public readonly IBaseRepository<EmployeeDto> _employee;
+        public EmployeesController(IBaseRepository<EmployeeDto> employee)
+        {
+            _employee = employee;
+        }
 
         /// <summary>
         /// Refactor this method to go through proper layers and fetch from the DB.
@@ -25,8 +31,15 @@ namespace Sprout.Exam.WebApp.Controllers
         [HttpGet]
         public async Task<IActionResult> Get()
         {
-            var result = await Task.FromResult(StaticEmployees.ResultList);
-            return Ok(result);
+            try
+            {
+                var result = await _employee.GetAll();
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         /// <summary>
@@ -36,8 +49,15 @@ namespace Sprout.Exam.WebApp.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
-            var result = await Task.FromResult(StaticEmployees.ResultList.FirstOrDefault(m => m.Id == id));
-            return Ok(result);
+            try
+            {
+                var result = await _employee.GetById(id);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         /// <summary>
@@ -47,13 +67,25 @@ namespace Sprout.Exam.WebApp.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> Put(EditEmployeeDto input)
         {
-            var item = await Task.FromResult(StaticEmployees.ResultList.FirstOrDefault(m => m.Id == input.Id));
-            if (item == null) return NotFound();
-            item.FullName = input.FullName;
-            item.Tin = input.Tin;
-            item.Birthdate = input.Birthdate.ToString("yyyy-MM-dd");
-            item.TypeId = input.TypeId;
-            return Ok(item);
+            try
+            {
+                //Update data in Database
+                await _employee.Update(input.Id, new
+                {
+                    input.FullName,
+                    input.Tin,
+                    Birthdate = input.Birthdate.ToString("yyyy-MM-dd"),
+                    input.TypeId
+                });
+
+                //Get Latest Data
+                var latestData = _employee.GetById(input.Id);
+                return Ok(latestData);
+            }
+            catch(Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         /// <summary>
@@ -63,19 +95,23 @@ namespace Sprout.Exam.WebApp.Controllers
         [HttpPost]
         public async Task<IActionResult> Post(CreateEmployeeDto input)
         {
-
-           var id = await Task.FromResult(StaticEmployees.ResultList.Max(m => m.Id) + 1);
-
-            StaticEmployees.ResultList.Add(new EmployeeDto
+            try
             {
-                Birthdate = input.Birthdate.ToString("yyyy-MM-dd"),
-                FullName = input.FullName,
-                Id = id,
-                Tin = input.Tin,
-                TypeId = input.TypeId
-            });
+                var employee = new EmployeeDto
+                {
+                    FullName = input.FullName,
+                    Birthdate = input.Birthdate.ToString("yyyy-MM-dd"),
+                    Tin = input.Tin,
+                    TypeId = input.TypeId
+                };
 
-            return Created($"/api/employees/{id}", id);
+                await _employee.Add(employee);
+                return Created($"/api/employees/{employee.Id}", employee.Id);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
 
@@ -86,10 +122,15 @@ namespace Sprout.Exam.WebApp.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            var result = await Task.FromResult(StaticEmployees.ResultList.FirstOrDefault(m => m.Id == id));
-            if (result == null) return NotFound();
-            StaticEmployees.ResultList.RemoveAll(m => m.Id == id);
-            return Ok(id);
+            try
+            {
+                await _employee.Delete(id);
+                return Ok(id);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
 
@@ -104,7 +145,7 @@ namespace Sprout.Exam.WebApp.Controllers
         [HttpPost("{id}/calculate")]
         public async Task<IActionResult> Calculate(CalculateDto input)
         {
-            var result = await Task.FromResult(StaticEmployees.ResultList.FirstOrDefault(m => m.Id == input.Id));
+            var result = await _employee.GetById(input.Id);
 
             if (result == null) return NotFound();
             var type = (EmployeeType) result.TypeId;
