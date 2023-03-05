@@ -1,14 +1,10 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Sprout.Exam.Business.DataTransferObjects;
 using Sprout.Exam.Common.Enums;
 using Sprout.Exam.Common.Constants;
-using Sprout.Exam.WebApp.Services;
 using Sprout.Exam.WebApp.Contractors;
 
 namespace Sprout.Exam.WebApp.Controllers
@@ -18,10 +14,12 @@ namespace Sprout.Exam.WebApp.Controllers
     [ApiController]
     public class EmployeesController : ControllerBase
     {
-        public readonly IBaseRepository<EmployeeDto> _employee;
-        public EmployeesController(IBaseRepository<EmployeeDto> employee)
+        private readonly IBaseRepository<EmployeeDto> _employee;
+        private readonly IUtilityService _utility;
+        public EmployeesController(IBaseRepository<EmployeeDto> employee, IUtilityService utility)
         {
             _employee = employee;
+            _utility = utility;
         }
 
         /// <summary>
@@ -69,13 +67,26 @@ namespace Sprout.Exam.WebApp.Controllers
         {
             try
             {
-                //Update data in Database
+                var updatedData = new EmployeeDto
+                {
+                    Id = input.Id,
+                    FullName = input.FullName,
+                    Birthdate = input.Birthdate.ToString(Constant.FORMAT_DATE),
+                    Tin = input.Tin,
+                    TypeId = input.TypeId
+                };
+
+                var errorMessage = await _utility.ValidateEmployee(updatedData);
+                if (errorMessage != string.Empty)
+                    throw new Exception(errorMessage);
+
+                //Update data in database
                 await _employee.Update(input.Id, new
                 {
-                    input.FullName,
-                    input.Tin,
-                    Birthdate = input.Birthdate.ToString("yyyy-MM-dd"),
-                    input.TypeId
+                    updatedData.FullName,
+                    updatedData.Birthdate,
+                    updatedData.Tin,
+                    updatedData.TypeId
                 });
 
                 //Get Latest Data
@@ -100,10 +111,14 @@ namespace Sprout.Exam.WebApp.Controllers
                 var employee = new EmployeeDto
                 {
                     FullName = input.FullName,
-                    Birthdate = input.Birthdate.ToString("yyyy-MM-dd"),
+                    Birthdate = input.Birthdate.ToString(Constant.FORMAT_DATE),
                     Tin = input.Tin,
                     TypeId = input.TypeId
                 };
+
+                var errorMessage = await _utility.ValidateEmployee(employee);
+                if (errorMessage != string.Empty)
+                    throw new Exception(errorMessage);
 
                 await _employee.Add(employee);
                 return Created($"/api/employees/{employee.Id}", employee.Id);
@@ -156,17 +171,17 @@ namespace Sprout.Exam.WebApp.Controllers
                 switch (type)
                 {
                     case EmployeeType.Regular:
-                        totalSalary = UtilityService.CalculateSalary(EmployeeType.Regular, input.AbsentDays);
+                        totalSalary = _utility.CalculateSalary(EmployeeType.Regular, input.AbsentDays);
                         break;
 
                     case EmployeeType.Contractual:
-                        totalSalary = UtilityService.CalculateSalary(EmployeeType.Contractual, input.WorkedDays);
+                        totalSalary = _utility.CalculateSalary(EmployeeType.Contractual, input.WorkedDays);
                         break;
 
                     default:
-                        return NotFound("Employee Type not found");
+                        return NotFound(Constant.ERROR_MESSAGE_EMPTYPE_NOT_FOUND);
                 }
-                return Ok(totalSalary);
+                return Ok(totalSalary.ToString(Constant.FORMAT_NUMBER));
             }
             catch (Exception ex)
             {

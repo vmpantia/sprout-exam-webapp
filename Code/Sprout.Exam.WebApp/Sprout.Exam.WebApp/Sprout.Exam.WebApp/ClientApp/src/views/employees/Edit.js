@@ -80,7 +80,7 @@ export class EmployeeEdit extends Component {
                 const data = await response.json();
                 //Check response status
                 if (response.status === 200) {
-                    alert("Employee successfully saved");
+                    alert("Employee successfully saved.");
                     this.props.history.push("/employees/index");
                     return;
                 }

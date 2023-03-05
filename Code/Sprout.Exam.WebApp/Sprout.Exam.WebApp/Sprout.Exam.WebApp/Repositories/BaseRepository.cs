@@ -3,6 +3,7 @@ using Sprout.Exam.WebApp.Contractors;
 using Sprout.Exam.WebApp.Data;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Sprout.Exam.WebApp.Repositories
@@ -33,6 +34,12 @@ namespace Sprout.Exam.WebApp.Repositories
                 throw new ArgumentNullException("No record found in the system.");
 
             return result;
+        }
+
+        public bool IsDataExist(Func<T, bool> condition)
+        {
+            var result =  _table.Where(condition).ToList();
+            return result != null && result.Count > 0;
         }
 
         public async Task Add(T t)

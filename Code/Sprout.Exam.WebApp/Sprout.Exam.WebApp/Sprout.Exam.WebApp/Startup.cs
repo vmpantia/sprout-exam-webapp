@@ -1,9 +1,6 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.UI;
 using Microsoft.AspNetCore.SpaServices.ReactDevelopmentServer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -13,6 +10,7 @@ using Sprout.Exam.WebApp.Contractors;
 using Sprout.Exam.WebApp.Data;
 using Sprout.Exam.WebApp.Models;
 using Sprout.Exam.WebApp.Repositories;
+using Sprout.Exam.WebApp.Services;
 
 namespace Sprout.Exam.WebApp
 {
@@ -33,6 +31,7 @@ namespace Sprout.Exam.WebApp
                     Configuration.GetConnectionString("DefaultConnection")));
 
             services.AddScoped(typeof(IBaseRepository<>), typeof(BaseRepository<>));
+            services.AddScoped<IUtilityService, UtilityService>();
 
             services.AddDatabaseDeveloperPageExceptionFilter();
 

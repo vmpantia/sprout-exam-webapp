@@ -108,7 +108,7 @@ export class EmployeeCalculate extends Component {
                 const data = await response.json();
                 //Check response status
                 if (response.status === 200) {
-                    this.setState({ netIncome: parseFloat(data).toFixed(2) });
+                    this.setState({ netIncome: data });
                     return;
                 }
 
