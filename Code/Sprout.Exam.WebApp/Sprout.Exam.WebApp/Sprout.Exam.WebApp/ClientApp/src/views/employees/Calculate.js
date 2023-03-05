@@ -95,18 +95,32 @@ export class EmployeeCalculate extends Component {
     );
   }
 
-  async calculateSalary() {
-    this.setState({ loadingCalculate: true });
-    const token = await authService.getAccessToken();
-    const requestOptions = {
-        method: 'POST',
-        headers: !token ? {} : { 'Authorization': `Bearer ${token}`,'Content-Type': 'application/json' },
-        body: JSON.stringify({id: this.state.id,absentDays: this.state.absentDays,workedDays: this.state.workedDays})
-    };
-    const response = await fetch('api/employees/' + this.state.id + '/calculate',requestOptions);
-    const data = await response.json();
-    this.setState({ loadingCalculate: false,netIncome: parseFloat(data).toFixed(2) });
-  }
+    async calculateSalary() {
+        this.setState({ loadingCalculate: true });
+        const token = await authService.getAccessToken();
+        const requestOptions = {
+            method: 'POST',
+            headers: !token ? {} : { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', 'accept': 'application/json' },
+            body: JSON.stringify({ id: this.state.id, absentDays: this.state.absentDays, workedDays: this.state.workedDays })
+        };
+        fetch('api/employees/' + this.state.id + '/calculate', requestOptions)
+            .then(async response => {
+                const data = await response.json();
+                //Check response status
+                if (response.status === 200) {
+                    this.setState({ netIncome: parseFloat(data).toFixed(2) });
+                    return;
+                }
+
+                //Get error message from response
+                const errorMessage = data.title ?? data;
+                alert("Controller Error: " + errorMessage);
+            })
+            .catch(error => {
+                alert("System Error: " + error);
+            });
+        this.setState({ loadingCalculate: false });
+    }
 
   async getEmployee(id) {
     this.setState({ loading: true,loadingCalculate: false });

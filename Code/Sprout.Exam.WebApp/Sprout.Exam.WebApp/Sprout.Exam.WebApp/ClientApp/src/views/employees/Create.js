@@ -66,24 +66,32 @@ export class EmployeeCreate extends Component {
     );
   }
 
-  async saveEmployee() {
-    this.setState({ loadingSave: true });
-    const token = await authService.getAccessToken();
-    const requestOptions = {
-        method: 'POST',
-        headers: !token ? {} : { 'Authorization': `Bearer ${token}`,'Content-Type': 'application/json' },
-        body: JSON.stringify(this.state)
-    };
-    const response = await fetch('api/employees',requestOptions);
+    async saveEmployee() {
+        this.setState({ loadingSave: true });
+        const token = await authService.getAccessToken();
+        const requestOptions = {
+            method: 'POST',
+            headers: !token ? {} : { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', 'accept': 'application/json' },
+            body: JSON.stringify(this.state)
+        };
+        fetch('api/employees/', requestOptions)
+            .then(async response => {
+                const data = await response.json();
+                //Check response status
+                if (response.status === 201) {
+                    alert("Employee successfully saved.");
+                    this.props.history.push("/employees/index");
+                    return;
+                }
 
-    if(response.status === 201){
+                //Get error message from response
+                const errorMessage = data.title ?? data;
+                alert("Controller Error: " + errorMessage);
+            })
+            .catch(error => {
+                alert("System Error: " + error);
+            });
         this.setState({ loadingSave: false });
-        alert("Employee successfully saved");
-        this.props.history.push("/employees/index");
     }
-    else{
-        alert("There was an error occured.");
-    }
-  }
 
 }

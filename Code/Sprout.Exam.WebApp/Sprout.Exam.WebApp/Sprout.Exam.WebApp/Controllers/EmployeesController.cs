@@ -145,26 +145,33 @@ namespace Sprout.Exam.WebApp.Controllers
         [HttpPost("{id}/calculate")]
         public async Task<IActionResult> Calculate(CalculateDto input)
         {
-            var result = await _employee.GetById(input.Id);
-
-            if (result == null) return NotFound();
-            var type = (EmployeeType) result.TypeId;
-
-            decimal totalSalary;
-            switch (type)
+            try
             {
-                case EmployeeType.Regular:
-                    totalSalary = UtilityService.CalculateSalary(EmployeeType.Regular, input.AbsentDays);
-                    break;
+                var result = await _employee.GetById(input.Id);
 
-                case EmployeeType.Contractual:
-                    totalSalary = UtilityService.CalculateSalary(EmployeeType.Contractual, input.WorkedDays);
-                    break;
+                if (result == null) return NotFound();
+                var type = (EmployeeType) result.TypeId;
 
-                default:
-                    return NotFound("Employee Type not found");
+                decimal totalSalary;
+                switch (type)
+                {
+                    case EmployeeType.Regular:
+                        totalSalary = UtilityService.CalculateSalary(EmployeeType.Regular, input.AbsentDays);
+                        break;
+
+                    case EmployeeType.Contractual:
+                        totalSalary = UtilityService.CalculateSalary(EmployeeType.Contractual, input.WorkedDays);
+                        break;
+
+                    default:
+                        return NotFound("Employee Type not found");
+                }
+                return Ok(totalSalary);
             }
-            return Ok(totalSalary);
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
     }
